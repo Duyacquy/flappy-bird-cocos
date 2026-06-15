@@ -1,38 +1,37 @@
-import { _decorator, Component, Label } from 'cc';
+import { _decorator, Component, Node, Label } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('Results')
 export class Results extends Component {
     @property({
-        type: Label
+        type: Label,
+        tooltip: 'Current Score'
     })
-    public scoreLabel!: Label;
+    public scoreLabel: Label = null!;
 
     @property({
-        type: Label
+        type: Label,
+        tooltip: 'High Score'
     })
-    public highScore!: Label;
+    public highScore: Label = null!;
 
     @property({
-        type: Label
+        type: Label,
+        tooltip: 'Try Again?'
     })
-    public resultEnd!: Label;
+    public resultEnd: Label = null!;
 
     maxScore: number = 0;
     currentScore: number = 0;
-    
+
     updateScore(num: number) {
         this.currentScore = num;
-
-        this.scoreLabel.string = ('' + this.currentScore);
+        this.scoreLabel.string = '' + this.currentScore;
     }
 
     resetScore() {
         this.updateScore(0);
-
         this.hideResult();
-
-        this.scoreLabel.string = ('' + this.currentScore);
     }
 
     addScore() {
@@ -40,11 +39,12 @@ export class Results extends Component {
     }
 
     showResult() {
-        this.maxScore = Math.max(this.currentScore, this.maxScore);
-
-        this.highScore.string = 'High Score: ' + this.maxScore;
+        // Tính toán và cập nhật điểm cao nhất
+        this.maxScore = Math.max(this.maxScore, this.currentScore);
+        this.highScore.string = 'High Score is: ' + this.maxScore;
+        
+        // Hiển thị UI kết thúc
         this.highScore.node.active = true;
-
         this.resultEnd.node.active = true;
     }
 
@@ -52,10 +52,4 @@ export class Results extends Component {
         this.highScore.node.active = false;
         this.resultEnd.node.active = false;
     }
-
-    update(deltaTime: number) {
-        
-    }
 }
-
-

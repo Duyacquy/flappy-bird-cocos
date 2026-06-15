@@ -5,26 +5,24 @@ const { ccclass, property } = _decorator;
 export class PipePool extends Component {
     @property({
         type: Prefab,
-        tooltip: "The pipe prefab"
+        tooltip: 'The prefab of pipes'
     })
-    public pipePrefab: Prefab = null;
+    public prefabPipes: Prefab = null!;
 
     @property({
         type: Node,
-        tooltip: "The parent node of pipes"
+        tooltip: 'Where the new pipes go'
     })
-    public pipePoolHome: Node = null;
+    public pipePoolHome: Node = null!;
 
     public pool = new NodePool();
-    public createPipe: Node = null;
+    public createPipeNode: Node = null!;
 
     initPool() {
         let initCount = 3;
-
         for (let i = 0; i < initCount; i++) {
-            let createPipe = instantiate(this.pipePrefab);
-
-            if (i == 0) {
+            let createPipe = instantiate(this.prefabPipes);
+            if (i === 0) {
                 this.pipePoolHome.addChild(createPipe);
             } else {
                 this.pool.put(createPipe);
@@ -34,12 +32,11 @@ export class PipePool extends Component {
 
     addPool() {
         if (this.pool.size() > 0) {
-            this.createPipe = this.pool.get();
+            this.createPipeNode = this.pool.get()!;
         } else {
-            this.createPipe = instantiate(this.pipePrefab);
+            this.createPipeNode = instantiate(this.prefabPipes);
         }
-
-        this.pipePoolHome.addChild(this.createPipe);
+        this.pipePoolHome.addChild(this.createPipeNode);
     }
 
     reset() {
@@ -47,10 +44,4 @@ export class PipePool extends Component {
         this.pool.clear();
         this.initPool();
     }
-
-    update(deltaTime: number) {
-        
-    }
 }
-
-

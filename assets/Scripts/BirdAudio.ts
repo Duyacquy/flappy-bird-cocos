@@ -16,9 +16,7 @@ export class BirdAudio extends Component {
     onAudioQueue(index: number) {
         let clip: AudioClip = this.clips[index];
         
-        if (clip && this.audioSource) {
-            this.audioSource.play(clip);
-        }
+        this.audioSource.playOneShot(clip);
     }
 
     update(deltaTime: number) {

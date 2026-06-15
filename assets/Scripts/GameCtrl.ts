@@ -1,33 +1,18 @@
-import { _decorator, Component, Node, CCInteger, Input, input, EventKeyboard, KeyCode, director, Contact2DType, Conllider2D, IPhysic2DContact } from 'cc';
+import { _decorator, Component, Node, CCInteger, Input, input, EventKeyboard, KeyCode, director, Contact2DType, Collider2D, IPhysics2DContact } from 'cc';
+const { ccclass, property } = _decorator;
 import { Ground } from './Ground';
 import { Results } from './Results';
 import { Bird } from './Bird';
 import { PipePool } from './PipePool';
 import { BirdAudio } from './BirdAudio';
 
-const { ccclass, property } = _decorator;
-
 @ccclass('GameCtrl')
 export class GameCtrl extends Component {
     @property({
-        type: Component
+        type: Ground,
+        tooltip: 'Add ground component here'
     })
-    public ground!: Ground;
-
-    @property({
-        type: PipePool
-    })
-    public pipePool!: PipePool;
-
-    @property({
-        type: Results
-    })
-    public result!: Results;
-
-    @property({
-        type: BirdAudio
-    })
-    public clip!: BirdAudio;
+    public ground: Ground = null!;
 
     @property({
         type: CCInteger,
@@ -39,127 +24,124 @@ export class GameCtrl extends Component {
         type: CCInteger,
         tooltip: 'Change the speed of pipes'
     })
-    public pileSpeed: number = 200;
+    public pipeSpeed: number = 200;
+
+    @property({
+        type: Results,
+        tooltip: 'Add results here'
+    })
+    public result: Results = null!;
 
     @property({
         type: Bird,
-        tooltip: 'The bird'
+        tooltip: 'Add Bird node'
     })
-    public bird!: Bird;
+    public bird: Bird = null!;
 
-    public isOver!: boolean;
+    @property({
+        type: PipePool,
+        tooltip: 'Add pipe pool here'
+    })
+    public pipeQueue: PipePool = null!;
+
+    @property({
+        type: BirdAudio,
+        tooltip: 'Add audio controller'
+    })
+    public clip: BirdAudio = null!;
+
+    public isOver: boolean = true;
 
     onLoad() {
         this.initListener();
-
         this.result.resetScore();
-
         this.isOver = true;
-
         director.pause();
     }
 
     initListener() {
+        // Lắng nghe sự kiện bàn phím (Dùng để test)
         input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
-
+        
+        // Lắng nghe sự kiện chuột/chạm màn hình để điều khiển chú chim bay
         this.node.on(Node.EventType.TOUCH_START, () => {
-            this.bird.fly();
-        });
+            if (this.isOver) {
+                this.resetGame();
+                return;
+            }
+            if (!this.isOver) {
+                this.bird.fly();
+                this.clip.onAudioQueue(0); // Âm thanh Swoosh đập cánh
+            }
+        }, this);
+    }
 
-        if (this.isOver) {
-            this.resetGame();
-            this.bird.resetBird();
-            this.startGame();
-        }
-
-        if (this.isOver == false) {
-            this.bird.fly();
-
-            this.clip.onAudioQueue(0);
+    // Các phím tắt hỗ trợ testing (Có thể ẩn/xóa đi khi phát hành game thực tế)
+    onKeyDown(event: EventKeyboard) {
+        switch (event.keyCode) {
+            case KeyCode.KEY_A:
+                this.gameOver();
+                break;
+            case KeyCode.KEY_P:
+                this.result.addScore();
+                break;
+            case KeyCode.KEY_Q:
+                this.resetGame();
+                break;
         }
     }
 
     startGame() {
         this.result.hideResult();
-
         director.resume();
-    }
-
-    private onKeyDown(event: EventKeyboard) {
-        switch (event.keyCode) {
-            case KeyCode.KEY_A:
-                this.gameOver();
-                break;
-
-            case KeyCode.KEY_P:
-                this.startGame();
-                break;
-
-            case KeyCode.KEY_S:
-                this.result.addScore();
-                break;
-
-            case KeyCode.KEY_Q:
-                this.resetGame();
-                this.bird.resetBird();
-                break;
-        }
-    }
-
-    gameOver() {
-        this.result.showResult();
-
-        this.isOver = true;
-
-        this.clip.onAudioQueue(3);
-
-        director.pause();
     }
 
     resetGame() {
         this.result.resetScore();
-        this.pipePool.reset();
+        this.pipeQueue.reset();
+        this.bird.resetBird();
         this.isOver = false;
         this.startGame();
     }
 
     passPipe() {
         this.result.addScore();
-
-        this.clip.onAudioQueue(1);
+        this.clip.onAudioQueue(1); // Âm thanh Point khi được điểm
     }
 
     createPipe() {
-        this.pipePool.addPool();
+        this.pipeQueue.addPool();
     }
 
     contactGroundPipe() {
-        let collider = this.bird.getComponent(Conllider2D);
-
+        let collider = this.bird.getComponent(Collider2D);
         if (collider) {
             collider.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
         }
     }
 
-    onBeginContact(selfCollider: Conllider2D, otherCollider: Conllider2D, contact: IPhysic2DContact | null) {
+    onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
         this.bird.hitSomething = true;
-
-        this.clip.onAudioQueue(2);
+        this.clip.onAudioQueue(2); // Âm thanh Hit khi va chạm
     }
 
     birdStruck() {
         this.contactGroundPipe();
-
         if (this.bird.hitSomething) {
             this.gameOver();
         }
     }
 
-    update(deltaTime: number) {
-        if (this.isOver == false) {
+    gameOver() {
+        this.result.showResult();
+        this.isOver = true;
+        this.clip.onAudioQueue(3); // Âm thanh Die khi Game Over
+        director.pause();
+    }
+
+    update() {
+        if (!this.isOver) {
             this.birdStruck();
         }
     }
 }
-
-
