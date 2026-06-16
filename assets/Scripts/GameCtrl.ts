@@ -27,6 +27,12 @@ export class GameCtrl extends Component {
     public pipeSpeed: number = 200;
 
     @property({
+        type: Node,
+        tooltip: 'Start UI'
+    })
+    public startUI: Node = null!;
+
+    @property({
         type: Results,
         tooltip: 'Add results here'
     })
@@ -50,13 +56,16 @@ export class GameCtrl extends Component {
     })
     public clip: BirdAudio = null!;
 
-    public isOver: boolean = true;
+    public isOver: boolean = false;
+    public isReady: boolean = true;
 
     onLoad() {
+        this.pipeQueue.initPool();
         this.initListener();
         this.result.resetScore();
-        this.isOver = true;
-        director.pause();
+        this.isOver = false;
+        this.isReady = true;
+        this.startUI.active = true;
     }
 
     initListener() {
@@ -69,10 +78,14 @@ export class GameCtrl extends Component {
                 this.resetGame();
                 return;
             }
-            if (!this.isOver) {
+            if (this.isReady) {
+                this.startGame();
                 this.bird.fly();
-                this.clip.onAudioQueue(0); // Âm thanh Swoosh đập cánh
+                this.clip.onAudioQueue(0);
+                return;
             }
+            this.bird.fly();
+            this.clip.onAudioQueue(0); // Âm thanh Swoosh đập cánh
         }, this);
     }
 
@@ -92,16 +105,25 @@ export class GameCtrl extends Component {
     }
 
     startGame() {
+        this.startUI.active = false;
         this.result.hideResult();
         director.resume();
+        this.isReady = false;
+
+        if (this.bird) {
+            this.bird.setGravityActive(true);
+        }
+
+        this.createPipe();
     }
 
     resetGame() {
         this.result.resetScore();
         this.pipeQueue.reset();
-        this.bird.resetBird();
         this.isOver = false;
-        this.startGame();
+        this.isReady = true;
+        this.bird.resetBird();
+        this.startUI.active = true;
     }
 
     passPipe() {
@@ -110,7 +132,19 @@ export class GameCtrl extends Component {
     }
 
     createPipe() {
-        this.pipeQueue.addPool();
+        if (!this.isReady && !this.isOver) {
+            this.pipeQueue.addPool();
+        }
+    }
+
+    // Wrapper to recycle a pipe node back into the pool
+    recyclePipe(node: Node) {
+        if (!node) return;
+        if (this.pipeQueue && typeof this.pipeQueue.recycle === 'function') {
+            this.pipeQueue.recycle(node);
+        } else {
+            try { node.destroy(); } catch (e) { /* ignore */ }
+        }
     }
 
     contactGroundPipe() {
@@ -135,7 +169,10 @@ export class GameCtrl extends Component {
     gameOver() {
         this.result.showResult();
         this.isOver = true;
+        this.isReady = false;
         this.clip.onAudioQueue(3); // Âm thanh Die khi Game Over
+
+        this.result.showResult();
         director.pause();
     }
 

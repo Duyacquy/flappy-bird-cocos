@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, UITransform, director, Canvas } from 'cc';
+import { _decorator, Component, Node, Vec3, UITransform, find } from 'cc';
 const { ccclass, property } = _decorator;
 import { GameCtrl } from './GameCtrl';
 
@@ -30,10 +30,20 @@ export class Ground extends Component {
     public tempStartLocation2 = new Vec3();
     public tempStartLocation3 = new Vec3();
 
+    @property({
+        type: GameCtrl,
+        tooltip: 'Reference to GameCtrl'
+    })
     public gameCtrlSpeed: GameCtrl = null!;
     public gameSpeed: number = 0;
 
     onLoad() {
+        if (!this.gameCtrlSpeed) {
+            const gameCtrlNode = find('GameCtrl');
+            if (gameCtrlNode) {
+                this.gameCtrlSpeed = gameCtrlNode.getComponent(GameCtrl) as GameCtrl;
+            }
+        }
         this.startUp();
     }
 
@@ -56,6 +66,10 @@ export class Ground extends Component {
 
     update(deltaTime: number) {
         // Lấy tốc độ từ GameCtrl
+        if (this.gameCtrlSpeed && this.gameCtrlSpeed.isOver) {
+            return; // Đứng yên khi game over
+        }
+
         this.gameSpeed = this.gameCtrlSpeed.speed;
 
         // Lấy vị trí hiện tại
@@ -68,19 +82,18 @@ export class Ground extends Component {
         this.tempStartLocation2.x -= this.gameSpeed * deltaTime;
         this.tempStartLocation3.x -= this.gameSpeed * deltaTime;
 
-        // Kiểm tra xem đất đã đi ra khỏi màn hình chưa để reset lại hàng đợi
-        const scene = director.getScene();
-        const canvas = scene!.getComponentInChildren(Canvas);
-        const canvasWidth = canvas!.getComponent(UITransform)!.width;
+        const totalWidth = this.groundWidth1 + this.groundWidth2 + this.groundWidth3;
 
         if (this.tempStartLocation1.x <= -this.groundWidth1) {
-            this.tempStartLocation1.x = canvasWidth;
+            this.tempStartLocation1.x += totalWidth; 
         }
+        
         if (this.tempStartLocation2.x <= -this.groundWidth2) {
-            this.tempStartLocation2.x = canvasWidth;
+            this.tempStartLocation2.x += totalWidth;
         }
+        
         if (this.tempStartLocation3.x <= -this.groundWidth3) {
-            this.tempStartLocation3.x = canvasWidth;
+            this.tempStartLocation3.x += totalWidth;
         }
 
         // Cập nhật lại vị trí mới cho các node

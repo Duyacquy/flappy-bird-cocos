@@ -24,6 +24,7 @@ export class Pipes extends Component {
     public tempStartLocationDown: Vec3 = new Vec3(0, 0, 0);
     
     public scene = screen.windowSize;
+    public hasSpawnedNextPipe: boolean = false;
     public game: any;
     public pipeSpeed: number = 0;
     public tempSpeed: number = 0;
@@ -35,6 +36,7 @@ export class Pipes extends Component {
         this.pipeSpeed = this.game.pipeSpeed;
         this.initPos();
         this.isPass = false;
+        this.hasSpawnedNextPipe = false;
     }
 
     initPos() {
@@ -45,17 +47,22 @@ export class Pipes extends Component {
         this.tempStartLocationDown.x = bottomPipeWidth + this.scene.width;
 
         // Tạo khoảng cách ngẫu nhiên giữa 2 ống và chiều cao ống trên
-        let gap = random(90, 100); 
-        let topHeight = random(8, 458);
+        // let gap = 880; 
+        let gap = 950; 
+        let topHeight = random(420, 720);
 
         this.tempStartLocationUp.y = topHeight;
-        this.tempStartLocationDown.y = topHeight - (gap * 10);
+        this.tempStartLocationDown.y = topHeight - gap;
 
         this.topPipe.setPosition(this.tempStartLocationUp.x, this.tempStartLocationUp.y);
         this.bottomPipe.setPosition(this.tempStartLocationDown.x, this.tempStartLocationDown.y);
     }
 
     update(deltaTime: number) {
+        if (this.game && this.game.isOver) {
+            return; 
+        }
+        
         this.tempSpeed = this.pipeSpeed * deltaTime;
         
         this.tempStartLocationDown = this.bottomPipe.position;
@@ -68,15 +75,32 @@ export class Pipes extends Component {
         this.topPipe.setPosition(this.tempStartLocationUp);
 
         // Tính điểm khi chú chim vượt qua ống thành công
-        if (!this.isPass && this.topPipe.position.x <= 0) {
+        if (!this.isPass && this.topPipe.position.x <= -150) {
             this.isPass = true;
             this.game.passPipe();
         }
 
-        // Nếu đi khuất màn hình thì gọi sinh ống mới và tự hủy để tiết kiệm bộ nhớ
+        if (this.topPipe.position.x < 300) {
+            if (!this.hasSpawnedNextPipe) { 
+                this.game.createPipe();
+                this.hasSpawnedNextPipe = true;
+            }
+        }
+
+        // Vẫn giữ lệnh destroy khi ống thực sự biến mất để tránh nặng máy
         if (this.topPipe.position.x < -this.scene.width) {
-            this.game.createPipe();
-            this.node.destroy();
+            try {
+                // Prefer GameCtrl wrapper to return node to pool
+                if (this.game && typeof this.game.recyclePipe === 'function') {
+                    this.game.recyclePipe(this.node);
+                } else if (this.game && this.game.pipeQueue && typeof this.game.pipeQueue.recycle === 'function') {
+                    this.game.pipeQueue.recycle(this.node);
+                } else {
+                    this.node.destroy();
+                }
+            } catch (e) {
+                this.node.destroy();
+            }
         }
     }
 }
