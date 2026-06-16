@@ -158,12 +158,19 @@ export class GameCtrl extends Component {
     private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
         if (this.bird.hitSomething || this.isOver) return;
         
-        // 1. CHẶN NGAY TỪ ĐẦU: Đặt isOver = true ngay khi vừa chạm cọc để đóng băng hàm update()
+        if (otherCollider.node.name === 'Sky_Trigger') {
+            return;
+        }
+
         this.isOver = true; 
         this.isReady = false;
-        
         this.bird.hitSomething = true;
-        this.bird.hitBounce(); 
+
+        if (selfCollider) {
+            selfCollider.enabled = false; 
+        }
+        
+        this.bird.hitBounceAndFall(); 
         this.clip.onAudioQueue(2); // Âm thanh Hit
         
         // 2. Chạy chuỗi hiệu ứng chớp tắt trắng đen nghệ thuật
@@ -208,7 +215,7 @@ export class GameCtrl extends Component {
                 this.flashBlackNode.active = false;
             })
         
-            .delay(0.5) 
+            .delay(1) 
             .call(() => {
                 // Hết 1 giây mới chính thức mở bảng điểm
                 this.gameOver();
