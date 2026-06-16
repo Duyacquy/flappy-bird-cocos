@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, CCInteger, Input, input, EventKeyboard, KeyCode, director, Contact2DType, Collider2D, IPhysics2DContact } from 'cc';
+import { _decorator, Component, Node, CCInteger, Input, input, director, Contact2DType, Collider2D, IPhysics2DContact, UIOpacity, tween } from 'cc';
 const { ccclass, property } = _decorator;
 import { Ground } from './Ground';
 import { Results } from './Results';
@@ -56,12 +56,24 @@ export class GameCtrl extends Component {
     })
     public clip: BirdAudio = null!;
 
+    @property({
+        type: Node
+    })
+    public flashWhiteNode: Node = null!;
+
+    @property({
+        type: Node
+    })
+    public flashBlackNode: Node = null!;
+
     public isOver: boolean = false;
     public isReady: boolean = true;
+    private collisionListenerRegistered: boolean = false;
 
     onLoad() {
         this.pipeQueue.initPool();
         this.initListener();
+        this.registerCollisionListener();
         this.result.resetScore();
         this.isOver = false;
         this.isReady = true;
@@ -69,13 +81,9 @@ export class GameCtrl extends Component {
     }
 
     initListener() {
-        // Lắng nghe sự kiện bàn phím (Dùng để test)
-        input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
-        
         // Lắng nghe sự kiện chuột/chạm màn hình để điều khiển chú chim bay
         this.node.on(Node.EventType.TOUCH_START, () => {
             if (this.isOver) {
-                this.resetGame();
                 return;
             }
             if (this.isReady) {
@@ -89,9 +97,17 @@ export class GameCtrl extends Component {
         }, this);
     }
 
+    private registerCollisionListener() {
+        if (this.collisionListenerRegistered) return;
+        const collider = this.bird.getComponent(Collider2D);
+        if (collider) {
+            collider.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
+            this.collisionListenerRegistered = true;
+        }
+    }
+
     startGame() {
         this.startUI.active = false;
-        director.resume();
         this.isReady = false;
 
         if (this.bird) {
@@ -131,33 +147,87 @@ export class GameCtrl extends Component {
         }
     }
 
-    contactGroundPipe() {
-        let collider = this.bird.getComponent(Collider2D);
+    private registerContactListener() {
+        const collider = this.bird.getComponent(Collider2D);
         if (collider) {
+            collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
             collider.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
         }
     }
 
-    onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
+private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
+        if (this.bird.hitSomething || this.isOver) return;
+        
+        // 1. CHẶN NGAY TỪ ĐẦU: Đặt isOver = true ngay khi vừa chạm cọc để đóng băng hàm update()
+        this.isOver = true; 
+        this.isReady = false;
+        
         this.bird.hitSomething = true;
-        this.clip.onAudioQueue(2); // Âm thanh Hit khi va chạm
+        this.bird.hitBounce(); 
+        this.clip.onAudioQueue(2); // Âm thanh Hit
+        
+        // 2. Chạy chuỗi hiệu ứng chớp tắt trắng đen nghệ thuật
+        this.playFlashGlitchEffect();
     }
 
-    birdStruck() {
-        this.contactGroundPipe();
-        if (this.bird.hitSomething) {
+    private playFlashGlitchEffect() {
+        if (!this.flashWhiteNode || !this.flashBlackNode) {
+            this.gameOver();
+            return;
+        }
+
+        const opacityWhite = this.flashWhiteNode.getComponent(UIOpacity);
+        const opacityBlack = this.flashBlackNode.getComponent(UIOpacity);
+        if (!opacityWhite || !opacityBlack) {
+            this.gameOver();
+            return;
+        }
+
+        this.flashWhiteNode.active = true;
+        this.flashBlackNode.active = true;
+        opacityWhite.opacity = 0;
+        opacityBlack.opacity = 0;
+
+        // Chuỗi tween mượt mà đan xen trắng - đen
+        const tweenWhite = tween(opacityWhite)
+            .to(0.02, { opacity: 255 })
+            .to(0.02, { opacity: 0 })
+            .delay(0.02)
+            .to(0.02, { opacity: 200 })
+            .to(0.05, { opacity: 0 });
+
+        const tweenBlack = tween(opacityBlack)
+            .delay(0.04)
+            .to(0.04, { opacity: 240 })
+            .to(0.04, { opacity: 0 })
+            .delay(0.04)
+            .to(0.04, { opacity: 180 })
+            .to(0.1, { opacity: 0 });
+
+        tween(this.node)
+            .parallel(tweenWhite, tweenBlack)
+            .call(() => {
+                this.flashWhiteNode.active = false;
+                this.flashBlackNode.active = false;
+            })
+        
+            .delay(0.5) 
+            .call(() => {
+                // Hết 1 giây mới chính thức mở bảng điểm
+                this.gameOver();
+            })
+            .start();
+    }
+
+    private birdStruck() {
+        if (this.bird.hitSomething && !this.isOver) {
             this.gameOver();
         }
     }
 
     gameOver() {
-        this.result.showResult();
-        this.isOver = true;
-        this.isReady = false;
         this.clip.onAudioQueue(3); // Âm thanh Die khi Game Over
-
         this.result.showResult();
-        director.pause();
     }
 
     update() {

@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, CCFloat, Vec3, Animation, RigidBody2D, v2, AnimationClip } from 'cc';
+import { _decorator, Component, Node, CCFloat, Vec3, Animation, RigidBody2D, v2, AnimationClip, tween } from 'cc';
 const { ccclass, property } = _decorator;
 import { GameCtrl } from './GameCtrl';
 
@@ -58,18 +58,25 @@ export class Bird extends Component {
     }
 
     resetBird() {
-        this.birdLocation = new Vec3(-150, 0, 0);
+        this.birdLocation = new Vec3(-160, 0, 0);
         this.node.setPosition(this.birdLocation);
-        this.node.angle = 0; // Reset góc nghiêng về nằm ngang
-        
+        this.node.angle = 0;
+
         this.hitSomething = false;
+
+        if (this.rb2d) {
+            this.rb2d.linearVelocity = v2(0, 0);
+            this.rb2d.angularVelocity = 0;
+            this.rb2d.gravityScale = 0;
+
+            this.rb2d.fixedRotation = false;
+        }
 
         this.setGravityActive(false);
 
-        if (this.rb2d) {
-            this.rb2d.linearVelocity = v2(0, 0); // Reset vận tốc vật lý về 0
+        if (this.birdAnimation && this.birdAnimation.isPlaying) {
+            this.birdAnimation.stop();
         }
-
         this.playBirdAnimation();
     }
 
@@ -80,12 +87,35 @@ export class Bird extends Component {
         this.playBirdAnimation();
     }
 
+    hitBounce() {
+        if (!this.rb2d) return;
+
+        // 1. Khóa tính năng tự xoay của vật lý để chim không bị nghiêng lệch do va quệt cọc
+        this.rb2d.fixedRotation = true;
+        this.rb2d.angularVelocity = 0;
+
+        // 2. Triệt tiêu toàn bộ vận tốc cũ (cả X lẫn Y) để chim không bị bay lùi hay trôi ngang
+        this.rb2d.linearVelocity = v2(0, 0);
+
+        // 3. Tạo một lực nảy hướng lên trên rõ ràng (bạn có thể tăng từ 6 lên 7-8 nếu muốn nảy cao hơn)
+        const bounceForce = 6; 
+        this.rb2d.linearVelocity = v2(0, bounceForce);
+
+        // 4. Diễn hoạt góc nghiêng: Nẩy nhẹ góc lên rồi cắm đầu thẳng đứng xuống đất (-90 độ)
+        tween(this.node)
+            .to(0.1, { angle: 30 }, { easing: 'sineOut' }) // Nhấc mỏ lên nhẹ lúc đang nảy lên
+            .delay(0.15)                                    // Giữ trạng thái một chút ở đỉnh nảy
+            .to(0.4, { angle: -90 }, { easing: 'sineIn' })  // Chúi đầu thẳng đứng xuống đất cực kỳ đẹp mắt
+            .start();
+    }
+
     update(deltaTime: number) {
         if (this.hitSomething) {
             if (this.birdAnimation && this.birdAnimation.isPlaying) {
                 this.birdAnimation.stop();
             }
-            return;
+
+            return; 
         }
 
         // Lấy vận tốc hiện tại theo trục Y của chú chim
@@ -94,14 +124,11 @@ export class Bird extends Component {
         if (velocityY > 0) {
             this.node.angle = 25;
         } else {
-            // Khi đang rơi xuống (vận tốc Y âm): Chúi đầu xuống dưới (tối đa tầm -70 độ đến -90 độ)
-            // Vận tốc rơi càng nhanh, góc chúi xuống càng sâu
-            let targetAngle = velocityY * 10; // Nhân hệ số để góc xoay nhạy hơn theo tốc độ rơi
+            let targetAngle = velocityY * 10;
             
-            if (targetAngle < -90) targetAngle = -90; // Giới hạn góc cắm đầu thẳng đứng
+            if (targetAngle < -90) targetAngle = -90;
             if (targetAngle > 0) targetAngle = 0;
 
-            // Làm mượt góc nghiêng khi chuyển từ bay sang rơi bằng toán học (Linear Interpolation)
             this.node.angle = this.node.angle + (targetAngle - this.node.angle) * 0.1;
         }
     }

@@ -140,7 +140,6 @@ export class Results extends Component {
             this.playAgainNode.active = true;
         }
 
-        // SỬA TẠI ĐÂY: Vẽ điểm hiện tại xuống dưới SCORE và điểm cao xuống dưới BEST bằng ảnh PNG
         this.renderDigitsToContainer(this.currentScore, this.panelCurrentScoreContainer);
         this.renderDigitsToContainer(this.maxScore, this.panelBestScoreContainer);
     }
