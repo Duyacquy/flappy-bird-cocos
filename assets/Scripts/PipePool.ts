@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, NodePool, instantiate, find } from 'cc';
+import { _decorator, Component, Node, Prefab, NodePool, instantiate, find, Collider2D } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('PipePool')

@@ -149,10 +149,6 @@ export class Results extends Component {
         node.setPosition(origin.x, origin.y + yOffset, origin.z);
     }
 
-    private ensureOpacity(node: Node): never {
-        throw new Error('ensureOpacity should not be used anymore');
-    }
-
     hideEndUI() {
         // Hiện lại điểm trên đỉnh khi hồi sinh game mới
         if (this.scoreContainer) this.scoreContainer.active = true;

@@ -49,7 +49,7 @@ export class Bird extends Component {
 
     setGravityActive(active: boolean) {
         if (this.rb2d) {
-            this.rb2d.gravityScale = active ? 1.5 : 0;
+            this.rb2d.gravityScale = active ? 4.2 : 0;
             
             if (!active) {
                 this.rb2d.linearVelocity = v2(0, 0);

@@ -155,7 +155,7 @@ export class GameCtrl extends Component {
         }
     }
 
-private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
+    private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
         if (this.bird.hitSomething || this.isOver) return;
         
         // 1. CHẶN NGAY TỪ ĐẦU: Đặt isOver = true ngay khi vừa chạm cọc để đóng băng hàm update()
@@ -190,19 +190,16 @@ private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, cont
 
         // Chuỗi tween mượt mà đan xen trắng - đen
         const tweenWhite = tween(opacityWhite)
-            .to(0.02, { opacity: 255 })
-            .to(0.02, { opacity: 0 })
-            .delay(0.02)
-            .to(0.02, { opacity: 200 })
-            .to(0.05, { opacity: 0 });
+            .to(0.04, { opacity: 200 })
+            .to(0.04, { opacity: 0 })
+            .delay(0.04)
+            .to(0.04, { opacity: 180 })
+            .to(0.04, { opacity: 0 });
 
         const tweenBlack = tween(opacityBlack)
             .delay(0.04)
             .to(0.04, { opacity: 240 })
             .to(0.04, { opacity: 0 })
-            .delay(0.04)
-            .to(0.04, { opacity: 180 })
-            .to(0.1, { opacity: 0 });
 
         tween(this.node)
             .parallel(tweenWhite, tweenBlack)

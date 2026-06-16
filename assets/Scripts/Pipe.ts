@@ -47,8 +47,8 @@ export class Pipes extends Component {
         this.tempStartLocationDown.x = bottomPipeWidth + this.scene.width;
 
         // Tạo khoảng cách ngẫu nhiên giữa 2 ống và chiều cao ống trên
-        let gap = 880; 
-        let topHeight = random(420, 720);
+        let gap = 825; 
+        let topHeight = random(420, 750);
 
         this.tempStartLocationUp.y = topHeight;
         this.tempStartLocationDown.y = topHeight - gap;
