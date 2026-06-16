@@ -73,23 +73,24 @@ export class Pipes extends Component {
         this.bottomPipe.setPosition(this.tempStartLocationDown);
         this.topPipe.setPosition(this.tempStartLocationUp);
 
-        // Tính điểm khi chú chim vượt qua ống thành công
-        if (!this.isPass && this.topPipe.position.x <= -150) {
+        // 1. Tính điểm linh hoạt theo vị trí thực tế của chú chim
+        if (!this.isPass && this.game.bird && this.topPipe.position.x <= this.game.bird.node.position.x) {
             this.isPass = true;
             this.game.passPipe();
         }
 
-        if (this.topPipe.position.x < 300) {
+        // 2. Kích hoạt ống tiếp theo dựa trên tỉ lệ phần trăm màn hình (Ví dụ: 55%)
+        if (this.topPipe.position.x < this.scene.width * 0.3) {
             if (!this.hasSpawnedNextPipe) { 
                 this.game.createPipe();
                 this.hasSpawnedNextPipe = true;
             }
         }
 
-        // Vẫn giữ lệnh destroy khi ống thực sự biến mất để tránh nặng máy
-        if (this.topPipe.position.x < -this.scene.width) {
+        // 3. Tái chế ống khi đã chạy khuất hẳn màn hình bên trái
+        const pipeWidth = this.topPipe.getComponent(UITransform)!.width;
+        if (this.topPipe.position.x < -(this.scene.width / 2 + 3 * pipeWidth)) {
             try {
-                // Prefer GameCtrl wrapper to return node to pool
                 if (this.game && typeof this.game.recyclePipe === 'function') {
                     this.game.recyclePipe(this.node);
                 } else if (this.game && this.game.pipeQueue && typeof this.game.pipeQueue.recycle === 'function') {

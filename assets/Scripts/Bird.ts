@@ -21,6 +21,7 @@ export class Bird extends Component {
     public hitSomething: boolean = false;
     
     private rb2d: RigidBody2D = null!;
+    private idleTween: any = null;
     
     private playBirdAnimation() {
         if (!this.birdAnimation) return;
@@ -78,10 +79,33 @@ export class Bird extends Component {
             this.birdAnimation.stop();
         }
         this.playBirdAnimation();
+
+        this.startIdleAnimation();
+    }
+
+    private startIdleAnimation() {
+        if (this.idleTween) {
+            this.idleTween.stop();
+        }
+
+        this.node.setPosition(new Vec3(-160, 0, 0)); //
+        this.node.angle = 0; //
+
+        this.idleTween = tween(this.node)
+            .to(0.5, { position: new Vec3(-160, 15, 0), angle: 10 }, { easing: 'sineInOut' })
+            .to(0.5, { position: new Vec3(-160, -8, 0), angle: -10 }, { easing: 'sineInOut' })
+            .union()
+            .repeatForever()
+            .start();
     }
 
     fly() {
         if (this.hitSomething) return;
+
+        if (this.idleTween) {
+            this.idleTween.stop();
+            this.idleTween = null;
+        }
 
         this.rb2d.linearVelocity = v2(0, this.jumpForce);
         this.playBirdAnimation();
@@ -110,26 +134,30 @@ export class Bird extends Component {
     }
 
     update(deltaTime: number) {
-        if (this.hitSomething) {
-            if (this.birdAnimation && this.birdAnimation.isPlaying) {
-                this.birdAnimation.stop();
-            }
-
-            return; 
+        if (this.game && this.game.isReady) {
+            return;
         }
+
+        if (this.hitSomething) { //
+            if (this.birdAnimation && this.birdAnimation.isPlaying) { //
+                this.birdAnimation.stop(); //
+            } //
+
+            return; //
+        } //
 
         // Lấy vận tốc hiện tại theo trục Y của chú chim
-        let velocityY = this.rb2d.linearVelocity.y;
+        let velocityY = this.rb2d.linearVelocity.y; //
 
-        if (velocityY > 0) {
-            this.node.angle = 25;
-        } else {
-            let targetAngle = velocityY * 10;
+        if (velocityY > 0) { //
+            this.node.angle = 25; //
+        } else { //
+            let targetAngle = velocityY * 10; //
             
-            if (targetAngle < -90) targetAngle = -90;
-            if (targetAngle > 0) targetAngle = 0;
+            if (targetAngle < -90) targetAngle = -90; //
+            if (targetAngle > 0) targetAngle = 0; //
 
-            this.node.angle = this.node.angle + (targetAngle - this.node.angle) * 0.1;
-        }
+            this.node.angle = this.node.angle + (targetAngle - this.node.angle) * 0.1; //
+        } //
     }
 }
