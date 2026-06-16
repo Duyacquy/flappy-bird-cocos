@@ -39,7 +39,6 @@ export class Results extends Component {
     })
     public playAgainNode: Node = null!;
 
-    // --- THÊM 2 PROPERTY MỚI ĐỂ KÉO THẢ CONTAINER TRONG PANEL ---
     @property({
         type: Node,
         tooltip: 'Kéo Node PanelCurrentScoreContainer ở trong Panel vào đây'
@@ -65,12 +64,10 @@ export class Results extends Component {
 
         const scoreStr = num.toString();
         
-        // Ẩn toàn bộ các node cũ trong container đó
         for (let i = 0; i < container.children.length; i++) {
             container.children[i].active = false;
         }
 
-        // Tạo hoặc tái sử dụng node ảnh số
         for (let i = 0; i < scoreStr.length; i++) {
             const digitValue = parseInt(scoreStr[i]);
             let digitNode: Node;
@@ -90,7 +87,6 @@ export class Results extends Component {
         }
     }
 
-    // Cập nhật điểm số khi ĐANG CHƠI (hiển thị ở đỉnh màn hình)
     updateScore(num: number) {
         this.currentScore = num;
         this.renderDigitsToContainer(this.currentScore, this.scoreContainer);
@@ -118,30 +114,50 @@ export class Results extends Component {
 
     showResult() {
         this.maxScore = Math.max(this.maxScore, this.currentScore);
-        this.hideEndUI();
+        
+        // Dừng toàn bộ các tween cũ đang chạy dở trên 3 node UI này (nếu có) để tránh xung đột
+        if (this.gameOverNode) tween(this.gameOverNode).stop();
+        if (this.panelScoreNode) tween(this.panelScoreNode).stop();
+        if (this.playAgainNode) tween(this.playAgainNode).stop();
 
-        // Ẩn thanh điểm số khi đang chơi ở trên đỉnh màn hình đi cho đẹp góc nhìn
+        // 1. Ẩn thanh điểm số đỉnh màn hình lúc đang chơi đi
         if (this.scoreContainer) this.scoreContainer.active = false;
 
-        // Kích hoạt các UI kết quả bình thường
+        // 2. Vẽ điểm số vào các panel container trước khi xuất hiện
+        this.renderDigitsToContainer(this.currentScore, this.panelCurrentScoreContainer);
+        this.renderDigitsToContainer(this.maxScore, this.panelBestScoreContainer);
+
+        // Khoảng cách Y kéo lùi xuống để chuẩn bị hiệu ứng bay từ dưới lên (ví dụ lùi xuống 600 pixel)
+        const dropYOffset = -700;
+
+        // 3. Đặt các node UI vào vị trí chuẩn bị xuất phát (nằm ẩn phía dưới) và kích hoạt active
         if (this.gameOverNode) {
-            this.gameOverNode.setPosition(this.gameOverOrigin);
-            this.gameOverNode.setScale(1, 1, 1);
+            this.gameOverNode.setPosition(this.gameOverOrigin.x, this.gameOverOrigin.y + dropYOffset, this.gameOverOrigin.z);
             this.gameOverNode.active = true;
         }
         if (this.panelScoreNode) {
-            this.panelScoreNode.setPosition(this.panelScoreOrigin);
-            this.panelScoreNode.setScale(1, 1, 1);
+            this.panelScoreNode.setPosition(this.panelScoreOrigin.x, this.panelScoreOrigin.y + dropYOffset, this.panelScoreOrigin.z);
             this.panelScoreNode.active = true;
         }
         if (this.playAgainNode) {
-            this.playAgainNode.setPosition(this.playAgainOrigin);
-            this.playAgainNode.setScale(1, 1, 1);
+            this.playAgainNode.setPosition(this.playAgainOrigin.x, this.playAgainOrigin.y + dropYOffset, this.playAgainOrigin.z);
             this.playAgainNode.active = true;
         }
 
-        this.renderDigitsToContainer(this.currentScore, this.panelCurrentScoreContainer);
-        this.renderDigitsToContainer(this.maxScore, this.panelBestScoreContainer);
+        // 4. BIỂU DIỄN CHUỖI TWEEN TUẦN TỰ
+        tween(this.gameOverNode)
+            .to(0.9, { position: this.gameOverOrigin }, { easing: 'backOut' })
+            .call(() => {
+                tween(this.panelScoreNode)
+                    .to(0.9, { position: this.panelScoreOrigin }, { easing: 'backOut' })
+                    .start();
+
+                // Nút bấm Play Again bay lên đồng thời
+                tween(this.playAgainNode)
+                    .to(0.9, { position: this.playAgainOrigin }, { easing: 'backOut' })
+                    .start();
+            })
+            .start();
     }
 
     private prepareAnimationNode(node: Node, origin: Vec3, yOffset: number) {

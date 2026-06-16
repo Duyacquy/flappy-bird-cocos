@@ -214,10 +214,7 @@ export class GameCtrl extends Component {
                 this.flashWhiteNode.active = false;
                 this.flashBlackNode.active = false;
             })
-        
-            .delay(1) 
             .call(() => {
-                // Hết 1 giây mới chính thức mở bảng điểm
                 this.gameOver();
             })
             .start();

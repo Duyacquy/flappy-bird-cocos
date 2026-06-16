@@ -133,13 +133,13 @@ export class Bird extends Component {
     
         tween(this.node)
             // GIAI ĐOẠN 1: Nảy vút lên cao (Tăng thời gian lên 0.25 giây để người chơi kịp nhìn thấy hành động nảy)
-            .to(0.25, 
+            .to(0.3, 
                 { position: new Vec3(currentX, peakY, 0), angle: 25 }, 
                 { easing: 'quadOut' }
             ) 
     
             // GIAI ĐOẠN 2: Rơi tự do xuống đất
-            .to(0.8, 
+            .to(0.85, 
                 { position: new Vec3(currentX, groundY, 0), angle: -90 }, 
                 { easing: 'quadIn' }
             )
