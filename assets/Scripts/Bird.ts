@@ -27,7 +27,6 @@ export class Bird extends Component {
         
         const clipName = this.birdAnimation.defaultClip?.name || this.getAnyAnimationClipName();
         if (clipName) {
-            console.log(`Playing bird animation clip: ${clipName}`);
             this.birdAnimation.play(clipName);
         } else {
             this.birdAnimation.play();

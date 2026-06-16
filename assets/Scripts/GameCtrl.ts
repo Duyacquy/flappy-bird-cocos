@@ -89,24 +89,8 @@ export class GameCtrl extends Component {
         }, this);
     }
 
-    // Các phím tắt hỗ trợ testing (Có thể ẩn/xóa đi khi phát hành game thực tế)
-    onKeyDown(event: EventKeyboard) {
-        switch (event.keyCode) {
-            case KeyCode.KEY_A:
-                this.gameOver();
-                break;
-            case KeyCode.KEY_P:
-                this.result.addScore();
-                break;
-            case KeyCode.KEY_Q:
-                this.resetGame();
-                break;
-        }
-    }
-
     startGame() {
         this.startUI.active = false;
-        this.result.hideResult();
         director.resume();
         this.isReady = false;
 

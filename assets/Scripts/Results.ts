@@ -1,11 +1,11 @@
-import { _decorator, Component, Node, Label, Prefab, instantiate, Sprite, SpriteFrame, tween, Vec3, find } from 'cc';
+import { _decorator, Component, Node, Label, Prefab, instantiate, Sprite, SpriteFrame, Vec3, find, tween } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('Results')
 export class Results extends Component {
     @property({
         type: Node,
-        tooltip: 'Node cha chứa các chữ số hiển thị điểm hiện tại (layout nằm ngang)'
+        tooltip: 'Node cha chứa các chữ số hiển thị điểm khi đang chơi (đỉnh màn hình)'
     })
     public scoreContainer: Node = null!;
 
@@ -20,18 +20,6 @@ export class Results extends Component {
         tooltip: 'Kéo thả 10 file ảnh từ 0 đến 9 vào đây theo đúng thứ tự index'
     })
     public numberSprites: SpriteFrame[] = [];
-
-    @property({
-        type: Label,
-        tooltip: 'High Score (Có thể giữ nguyên Label hoặc đổi sau)'
-    })
-    public highScore: Label = null!;
-
-    @property({
-        type: Label,
-        tooltip: 'Try Again?'
-    })
-    public resultEnd: Label = null!;
 
     @property({
         type: Node,
@@ -51,46 +39,61 @@ export class Results extends Component {
     })
     public playAgainNode: Node = null!;
 
+    // --- THÊM 2 PROPERTY MỚI ĐỂ KÉO THẢ CONTAINER TRONG PANEL ---
+    @property({
+        type: Node,
+        tooltip: 'Kéo Node PanelCurrentScoreContainer ở trong Panel vào đây'
+    })
+    public panelCurrentScoreContainer: Node = null!;
+
+    @property({
+        type: Node,
+        tooltip: 'Kéo Node PanelBestScoreContainer ở trong Panel vào đây'
+    })
+    public panelBestScoreContainer: Node = null!;
+
     private currentScore: number = 0;
     private maxScore: number = 0;
-    private digitNodesPool: Node[] = []; // Pool nhỏ tự chế để quản lý các Node chữ số hiện tại
 
     private gameOverOrigin = new Vec3(0, 280, 0);
     private panelScoreOrigin = new Vec3(0, 21, 0);
     private playAgainOrigin = new Vec3(0, -249, 0);
 
-    updateScore(num: number) {
-        this.currentScore = num;
+    // HÀM HELPER: Dùng chung để vẽ chữ số PNG vào bất kỳ Container nào
+    private renderDigitsToContainer(num: number, container: Node) {
+        if (!container || !this.digitPrefab) return;
+
+        const scoreStr = num.toString();
         
-        // Chuyển số thành chuỗi ký tự (Ví dụ: 105 -> "1", "0", "5")
-        const scoreStr = this.currentScore.toString();
-        
-        // Ẩn toàn bộ các node chữ số cũ đang có trong container về trạng thái chờ
-        for (let i = 0; i < this.scoreContainer.children.length; i++) {
-            this.scoreContainer.children[i].active = false;
+        // Ẩn toàn bộ các node cũ trong container đó
+        for (let i = 0; i < container.children.length; i++) {
+            container.children[i].active = false;
         }
 
-        // Duyệt qua từng ký tự số để hiển thị hình ảnh tương ứng
+        // Tạo hoặc tái sử dụng node ảnh số
         for (let i = 0; i < scoreStr.length; i++) {
-            const digitValue = parseInt(scoreStr[i]); // Lấy giá trị số (0 -> 9)
+            const digitValue = parseInt(scoreStr[i]);
             let digitNode: Node;
 
-            // Tái sử dụng Node cũ trong Container nếu có, tránh instantiate liên tục gây lag
-            if (i < this.scoreContainer.children.length) {
-                digitNode = this.scoreContainer.children[i];
+            if (i < container.children.length) {
+                digitNode = container.children[i];
                 digitNode.active = true;
             } else {
-                // Nếu thiếu Node (ví dụ điểm tăng từ hàng đơn vị lên hàng chục) thì mới tạo mới
                 digitNode = instantiate(this.digitPrefab);
-                this.scoreContainer.addChild(digitNode);
+                container.addChild(digitNode);
             }
 
-            // Thay đổi hình ảnh (SpriteFrame) tương ứng với chữ số đó
             const spriteComp = digitNode.getComponent(Sprite);
             if (spriteComp && this.numberSprites[digitValue]) {
                 spriteComp.spriteFrame = this.numberSprites[digitValue];
             }
         }
+    }
+
+    // Cập nhật điểm số khi ĐANG CHƠI (hiển thị ở đỉnh màn hình)
+    updateScore(num: number) {
+        this.currentScore = num;
+        this.renderDigitsToContainer(this.currentScore, this.scoreContainer);
     }
 
     onLoad() {
@@ -99,20 +102,13 @@ export class Results extends Component {
     }
 
     private storeOriginalPositions() {
-        if (this.gameOverNode) {
-            this.gameOverOrigin = this.gameOverNode.position.clone();
-        }
-        if (this.panelScoreNode) {
-            this.panelScoreOrigin = this.panelScoreNode.position.clone();
-        }
-        if (this.playAgainNode) {
-            this.playAgainOrigin = this.playAgainNode.position.clone();
-        }
+        if (this.gameOverNode) this.gameOverOrigin = this.gameOverNode.position.clone();
+        if (this.panelScoreNode) this.panelScoreOrigin = this.panelScoreNode.position.clone();
+        if (this.playAgainNode) this.playAgainOrigin = this.playAgainNode.position.clone();
     }
 
     resetScore() {
         this.updateScore(0);
-        this.hideResult();
         this.hideEndUI();
     }
 
@@ -121,13 +117,13 @@ export class Results extends Component {
     }
 
     showResult() {
-        // Simple, immediate display (no animation)
         this.maxScore = Math.max(this.maxScore, this.currentScore);
-        this.highScore.string = 'High Score is: ' + this.maxScore;
-
         this.hideEndUI();
 
-        // Ensure nodes are at their original positions and default scale
+        // Ẩn thanh điểm số khi đang chơi ở trên đỉnh màn hình đi cho đẹp góc nhìn
+        if (this.scoreContainer) this.scoreContainer.active = false;
+
+        // Kích hoạt các UI kết quả bình thường
         if (this.gameOverNode) {
             this.gameOverNode.setPosition(this.gameOverOrigin);
             this.gameOverNode.setScale(1, 1, 1);
@@ -143,16 +139,11 @@ export class Results extends Component {
             this.playAgainNode.setScale(1, 1, 1);
             this.playAgainNode.active = true;
         }
-        // Render scores: current score under SCORE, high score under BEST
-        this.updateScore(this.currentScore);
-        if (this.highScore) {
-            this.highScore.string = String(this.maxScore);
-            this.highScore.node.active = true;
-        }
-        if (this.resultEnd) this.resultEnd.node.active = true;
-    }
 
-    // (restoreNodeVisual removed; simple activation used instead)
+        // SỬA TẠI ĐÂY: Vẽ điểm hiện tại xuống dưới SCORE và điểm cao xuống dưới BEST bằng ảnh PNG
+        this.renderDigitsToContainer(this.currentScore, this.panelCurrentScoreContainer);
+        this.renderDigitsToContainer(this.maxScore, this.panelBestScoreContainer);
+    }
 
     private prepareAnimationNode(node: Node, origin: Vec3, yOffset: number) {
         if (!node) return;
@@ -163,12 +154,10 @@ export class Results extends Component {
         throw new Error('ensureOpacity should not be used anymore');
     }
 
-    hideResult() {
-        this.highScore.node.active = false;
-        this.resultEnd.node.active = false;
-    }
-
     hideEndUI() {
+        // Hiện lại điểm trên đỉnh khi hồi sinh game mới
+        if (this.scoreContainer) this.scoreContainer.active = true;
+
         if (this.gameOverNode) {
             this.gameOverNode.active = false;
             this.prepareAnimationNode(this.gameOverNode, this.gameOverOrigin, 0);
@@ -187,12 +176,11 @@ export class Results extends Component {
     }
 
     onPlayAgainClick() {
-        // Tìm Component GameCtrl trong Scene để gọi lệnh reset
         const gameCtrlNode = find('GameCtrl');
         if (gameCtrlNode) {
             const gameCtrl = gameCtrlNode.getComponent('GameCtrl') as any;
             if (gameCtrl && typeof gameCtrl.resetGame === 'function') {
-                gameCtrl.resetGame(); // Gọi hàm reset game có sẵn của bạn
+                gameCtrl.resetGame();
             }
         }
     }
