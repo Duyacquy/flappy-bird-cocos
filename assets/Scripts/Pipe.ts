@@ -41,12 +41,11 @@ export class Pipes extends Component {
 
     initPos() {
         const topPipeWidth = this.topPipe.getComponent(UITransform)!.width;
-        const bottomPipeWidth = this.bottomPipe.getComponent(UITransform)!.width;
 
-        this.tempStartLocationUp.x = topPipeWidth + this.scene.width;
-        this.tempStartLocationDown.x = bottomPipeWidth + this.scene.width;
+        const spawnX = 320 + topPipeWidth;
+        this.tempStartLocationUp.x = spawnX;
+        this.tempStartLocationDown.x = spawnX;
 
-        // Tạo khoảng cách ngẫu nhiên giữa 2 ống và chiều cao ống trên
         let gap = 825; 
         let topHeight = random(420, 750);
 
@@ -79,17 +78,21 @@ export class Pipes extends Component {
             this.game.passPipe();
         }
 
-        // 2. Kích hoạt ống tiếp theo dựa trên tỉ lệ phần trăm màn hình (Ví dụ: 55%)
-        if (this.topPipe.position.x < this.scene.width * 0.3) {
+        const distanceToSpawnNext = 60; 
+
+        if (this.topPipe.position.x < distanceToSpawnNext) {
             if (!this.hasSpawnedNextPipe) { 
                 this.game.createPipe();
                 this.hasSpawnedNextPipe = true;
             }
         }
 
-        // 3. Tái chế ống khi đã chạy khuất hẳn màn hình bên trái
         const pipeWidth = this.topPipe.getComponent(UITransform)!.width;
-        if (this.topPipe.position.x < -(this.scene.width / 2 + 3 * pipeWidth)) {
+        
+        // Mép trái khung hình xanh là -320. Ống vượt qua mốc này hoàn toàn sẽ bị thu hồi.
+        const leftBoundary = -320 - (pipeWidth * 2.5); 
+
+        if (this.topPipe.position.x < leftBoundary) {
             try {
                 if (this.game && typeof this.game.recyclePipe === 'function') {
                     this.game.recyclePipe(this.node);

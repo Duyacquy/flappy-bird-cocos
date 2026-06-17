@@ -165,7 +165,7 @@ export class Bird extends Component {
         if (velocityY > 0) {
             this.node.angle = 25;
         } else {
-            let targetAngle = velocityY * 10;
+            let targetAngle = velocityY * 2;
             
             if (targetAngle < -90) targetAngle = -90;
             if (targetAngle > 0) targetAngle = 0;

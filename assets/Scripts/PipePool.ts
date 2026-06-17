@@ -19,7 +19,7 @@ export class PipePool extends Component {
     public createPipeNode: Node = null!;
 
     initPool() {
-        let initCount = 6;
+        let initCount = 8;
         for (let i = 0; i < initCount; i++) {
             let createPipe = instantiate(this.prefabPipes);
             this.pool.put(createPipe);
@@ -54,9 +54,11 @@ export class PipePool extends Component {
     }
 
     reset() {
-        this.pipePoolHome.removeAllChildren();
-        this.pool.clear();
-        this.initPool();
+        const activePipes = [...this.pipePoolHome.children];
+
+        for (const pipeNode of activePipes) {
+            this.recycle(pipeNode);
+        }
     }
 
     // Recycle a pipe node back into the pool instead of destroying it

@@ -3,5 +3,11 @@
   "uuid": "276be5f6-1c41-4cef-a8c4-6ef7412fb8ba",
   "creator": {
     "version": "3.8.8"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  },
+  "scripts": {
+    "deploy": "gh-pages -d build/web-mobile"
   }
 }
