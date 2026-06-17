@@ -147,14 +147,6 @@ export class GameCtrl extends Component {
         }
     }
 
-    private registerContactListener() {
-        const collider = this.bird.getComponent(Collider2D);
-        if (collider) {
-            collider.off(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
-            collider.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
-        }
-    }
-
     private onBeginContact(selfCollider: Collider2D, otherCollider: Collider2D, contact: IPhysics2DContact | null) {
         if (this.bird.hitSomething || this.isOver) return;
         

@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, CCFloat, Vec3, Animation, RigidBody2D, v2, AnimationClip, tween, Collider2D } from 'cc';
+import { _decorator, Component, Node, CCFloat, Vec3, Animation, RigidBody2D, v2, AnimationClip, tween, Collider2D, UITransform } from 'cc';
 const { ccclass, property } = _decorator;
 import { GameCtrl } from './GameCtrl';
 
@@ -117,30 +117,47 @@ export class Bird extends Component {
 
     public hitBounceAndFall() {
         if (this.rb2d) {
-            // Triệt tiêu hoàn toàn vận tốc vật lý và trọng lực để Tween làm chủ hoàn toàn
             this.rb2d.linearVelocity = v2(0, 0);
             this.rb2d.gravityScale = 0; 
             
-            // Khóa xoay cơ học để không bị lệch góc ngoài ý muốn
             this.rb2d.fixedRotation = true;
             this.rb2d.angularVelocity = 0;
         }
     
         const currentX = this.node.position.x;
-        const groundY = -335; // Giữ nguyên mốc tọa độ mặt đất của bạn
+        
+        let targetGroundY = -335;
+        
+        if (this.game && this.game.ground) {
+            const groundNode = this.game.ground.node;
+            
+            // 1. CỐ ĐỊNH CHIỀU CAO ĐẤT LÀ 112 PX
+            const groundHeight = 112; 
+            const halfGroundHeight = groundHeight / 2;
+            
+            // Tọa độ bề mặt trên cùng của đất
+            const groundSurfaceY = groundNode.position.y + halfGroundHeight;
+            
+       
+            const birdTransform = this.getComponent(UITransform);
+            let birdOffset = 40; // Con số dự phòng nếu không lấy được transform
+            
+            // Tọa độ đích: Bề mặt đất + một nửa kích thước chim để giữ tâm chim không bị lún
+            targetGroundY = groundSurfaceY + birdOffset;
+        }
     
         const peakY = this.node.position.y + 70; 
     
         tween(this.node)
-            // GIAI ĐOẠN 1: Nảy vút lên cao (Tăng thời gian lên 0.25 giây để người chơi kịp nhìn thấy hành động nảy)
+            // GIAI ĐOẠN 1: Nảy vút lên cao 
             .to(0.3, 
                 { position: new Vec3(currentX, peakY, 0), angle: 25 }, 
                 { easing: 'quadOut' }
             ) 
     
-            // GIAI ĐOẠN 2: Rơi tự do xuống đất
+            // GIAI ĐOẠN 2: Rơi tự do và hạ cánh chính xác ngay trên mặt cỏ
             .to(0.85, 
-                { position: new Vec3(currentX, groundY, 0), angle: -90 }, 
+                { position: new Vec3(currentX, targetGroundY, 0), angle: -90 }, 
                 { easing: 'quadIn' }
             )
             .start();

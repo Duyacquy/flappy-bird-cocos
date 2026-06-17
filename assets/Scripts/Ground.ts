@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, UITransform, find } from 'cc';
+import { _decorator, Component, Node, Vec3, UITransform, find, screen } from 'cc';
 const { ccclass, property } = _decorator;
 import { GameCtrl } from './GameCtrl';
 
@@ -22,9 +22,9 @@ export class Ground extends Component {
     })
     public ground3: Node = null!;
 
-    public groundWidth1: number;
-    public groundWidth2: number;
-    public groundWidth3: number;
+    public groundWidth1: number = 0;
+    public groundWidth2: number = 0;
+    public groundWidth3: number = 0;
 
     public tempStartLocation1 = new Vec3();
     public tempStartLocation2 = new Vec3();
@@ -48,51 +48,72 @@ export class Ground extends Component {
     }
 
     startUp() {
-        // Lấy chiều rộng của các mảnh đất
-        this.groundWidth1 = this.ground1.getComponent(UITransform)!.width;
-        this.groundWidth2 = this.ground2.getComponent(UITransform)!.width;
-        this.groundWidth3 = this.ground3.getComponent(UITransform)!.width;
+        // Lấy kích thước chiều rộng thực tế của màn hình thiết bị hiện tại
+        const viewWidth = screen.windowSize.width;
 
-        // Đặt vị trí ban đầu tạm thời
-        this.tempStartLocation1.x = 0;
-        this.tempStartLocation2.x = this.groundWidth1;
-        this.tempStartLocation3.x = this.groundWidth1 + this.groundWidth2;
+        const transform1 = this.ground1.getComponent(UITransform)!;
+        const transform2 = this.ground2.getComponent(UITransform)!;
+        const transform3 = this.ground3.getComponent(UITransform)!;
 
-        // Cập nhật vị trí thực tế
+        // ĐẢM BẢO AN TOÀN: Nhân đôi chiều rộng của mảnh đất để nó luôn dư dả, không bao giờ lo bị hở mép
+        transform1.width = viewWidth * 1.5;
+        transform2.width = viewWidth * 1.5;
+        transform3.width = viewWidth * 1.5;
+
+        // Cập nhật lại biến lưu chiều rộng mới
+        this.groundWidth1 = transform1.width;
+        this.groundWidth2 = transform2.width;
+        this.groundWidth3 = transform3.width;
+
+        this.tempStartLocation1.x = -(this.groundWidth1 - viewWidth) / 2;
+        this.tempStartLocation1.y = 0;
+
+        // Mảnh 2 nối đuôi ngay sau mảnh 1
+        this.tempStartLocation2.x = this.tempStartLocation1.x + this.groundWidth1;
+        this.tempStartLocation2.y = 0;
+
+        // Mảnh 3 nối đuôi ngay sau mảnh 2
+        this.tempStartLocation3.x = this.tempStartLocation2.x + this.groundWidth2;
+        this.tempStartLocation3.y = 0;
+
+        // Cập nhật vị trí thực tế ban đầu
         this.ground1.setPosition(this.tempStartLocation1);
         this.ground2.setPosition(this.tempStartLocation2);
         this.ground3.setPosition(this.tempStartLocation3);
     }
 
     update(deltaTime: number) {
-        // Lấy tốc độ từ GameCtrl
         if (this.gameCtrlSpeed && this.gameCtrlSpeed.isOver) {
-            return; // Đứng yên khi game over
+            return; 
         }
 
         this.gameSpeed = this.gameCtrlSpeed.speed;
 
-        // Lấy vị trí hiện tại
         this.tempStartLocation1 = this.ground1.position;
         this.tempStartLocation2 = this.ground2.position;
         this.tempStartLocation3 = this.ground3.position;
 
-        // Di chuyển về phía bên trái
+        // Di chuyển liên tục về bên trái
         this.tempStartLocation1.x -= this.gameSpeed * deltaTime;
         this.tempStartLocation2.x -= this.gameSpeed * deltaTime;
         this.tempStartLocation3.x -= this.gameSpeed * deltaTime;
 
+        // Tính tổng chiều rộng vòng lặp cuộn nền
         const totalWidth = this.groundWidth1 + this.groundWidth2 + this.groundWidth3;
+        const viewWidth = screen.windowSize.width;
+        
+        // Điều kiện hồi vị: Khi mép phải của mảnh đất đi quá mép trái màn hình
+        const leftLimit = -(viewWidth / 2) - (this.groundWidth1 + this.groundWidth2 + this.groundWidth3) / 2;
 
-        if (this.tempStartLocation1.x <= -this.groundWidth1) {
+        if (this.tempStartLocation1.x <= leftLimit) {
             this.tempStartLocation1.x += totalWidth; 
         }
         
-        if (this.tempStartLocation2.x <= -this.groundWidth2) {
+        if (this.tempStartLocation2.x <= leftLimit) {
             this.tempStartLocation2.x += totalWidth;
         }
         
-        if (this.tempStartLocation3.x <= -this.groundWidth3) {
+        if (this.tempStartLocation3.x <= leftLimit) {
             this.tempStartLocation3.x += totalWidth;
         }
 

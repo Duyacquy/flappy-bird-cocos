@@ -62,6 +62,8 @@ export class Results extends Component {
     private renderDigitsToContainer(num: number, container: Node) {
         if (!container || !this.digitPrefab) return;
 
+        container.removeAllChildren();
+        
         const scoreStr = num.toString();
         
         for (let i = 0; i < container.children.length; i++) {
@@ -128,7 +130,7 @@ export class Results extends Component {
         this.renderDigitsToContainer(this.maxScore, this.panelBestScoreContainer);
 
         // Khoảng cách Y kéo lùi xuống để chuẩn bị hiệu ứng bay từ dưới lên (ví dụ lùi xuống 600 pixel)
-        const dropYOffset = -700;
+        const dropYOffset = -900;
 
         // 3. Đặt các node UI vào vị trí chuẩn bị xuất phát (nằm ẩn phía dưới) và kích hoạt active
         if (this.gameOverNode) {
@@ -166,23 +168,23 @@ export class Results extends Component {
     }
 
     hideEndUI() {
-        // Hiện lại điểm trên đỉnh khi hồi sinh game mới
+        if (this.gameOverNode) tween(this.gameOverNode).stop();
+        if (this.panelScoreNode) tween(this.panelScoreNode).stop();
+        if (this.playAgainNode) tween(this.playAgainNode).stop();
+
         if (this.scoreContainer) this.scoreContainer.active = true;
 
         if (this.gameOverNode) {
             this.gameOverNode.active = false;
             this.prepareAnimationNode(this.gameOverNode, this.gameOverOrigin, 0);
-            this.gameOverNode.setScale(1, 1, 1);
         }
         if (this.panelScoreNode) {
             this.panelScoreNode.active = false;
             this.prepareAnimationNode(this.panelScoreNode, this.panelScoreOrigin, 0);
-            this.panelScoreNode.setScale(1, 1, 1);
         }
         if (this.playAgainNode) {
             this.playAgainNode.active = false;
             this.prepareAnimationNode(this.playAgainNode, this.playAgainOrigin, 0);
-            this.playAgainNode.setScale(1, 1, 1);
         }
     }
 

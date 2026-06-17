@@ -42,16 +42,25 @@ export class Pipes extends Component {
     initPos() {
         const topPipeWidth = this.topPipe.getComponent(UITransform)!.width;
 
-        const spawnX = 320 + topPipeWidth;
+        // GIỮ NGUYÊN: Tọa độ sinh trục X theo code gốc của bạn
+        const spawnX = 320 + topPipeWidth; 
         this.tempStartLocationUp.x = spawnX;
         this.tempStartLocationDown.x = spawnX;
 
-        let gap = 825; 
-        let topHeight = random(420, 750);
+        let realGap = 200; 
+        
+        // 2. VỊ TRÍ TRUNG TÂM KHE HỞ (Random trong khoảng giữa màn hình)
+        let centerGapY = random(-150, 250); 
 
-        this.tempStartLocationUp.y = topHeight;
-        this.tempStartLocationDown.y = topHeight - gap;
+        // 3. ĐỌC CHIỀU CAO THỰC TẾ CỦA ỐNG (Sau khi bạn đã tăng lên 900 hoặc 1000 trong Editor)
+        const pipeHeight = this.topPipe.getComponent(UITransform)!.height;
 
+        this.tempStartLocationUp.y = centerGapY + (realGap / 2) + pipeHeight / 2;
+        
+        // Vì bottomPipe neo ở ĐÁY (Y=0) nên tọa độ Y của nó phải bằng: Vị trí khe trung tâm - nửa khe hở - toàn bộ chiều cao ống
+        this.tempStartLocationDown.y = centerGapY - (realGap / 2) - pipeHeight / 2;
+
+        // Cập nhật tọa độ cho các node ống nước
         this.topPipe.setPosition(this.tempStartLocationUp.x, this.tempStartLocationUp.y);
         this.bottomPipe.setPosition(this.tempStartLocationDown.x, this.tempStartLocationDown.y);
     }
@@ -72,7 +81,7 @@ export class Pipes extends Component {
         this.bottomPipe.setPosition(this.tempStartLocationDown);
         this.topPipe.setPosition(this.tempStartLocationUp);
 
-        // 1. Tính điểm linh hoạt theo vị trí thực tế của chú chim
+        // Tính điểm theo vị trí thực tế của chú chim
         if (!this.isPass && this.game.bird && this.topPipe.position.x <= this.game.bird.node.position.x) {
             this.isPass = true;
             this.game.passPipe();
@@ -88,9 +97,10 @@ export class Pipes extends Component {
         }
 
         const pipeWidth = this.topPipe.getComponent(UITransform)!.width;
+        const viewWidth = screen.windowSize.width;
         
-        // Mép trái khung hình xanh là -320. Ống vượt qua mốc này hoàn toàn sẽ bị thu hồi.
-        const leftBoundary = -320 - (pipeWidth * 2.5); 
+        // ĐIỀU CHỈNH RESPONSIVE: Biên trái động dựa trên kích thước thật của thiết bị để thu hồi ống sạch sẽ khi bỏ Mask
+        const leftBoundary = -(viewWidth / 2) - (pipeWidth * 2.5); 
 
         if (this.topPipe.position.x < leftBoundary) {
             try {
